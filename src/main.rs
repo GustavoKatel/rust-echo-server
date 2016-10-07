@@ -56,6 +56,7 @@ impl Connection {
         }
 
     }
+
 }
 
 fn main() {
@@ -68,11 +69,11 @@ fn main() {
     let server = TcpListener::bind(&addr).unwrap();
 
     // create a new poll
-    let mut poll = Poll::new().unwrap();
+    let poll = Poll::new().unwrap();
 
     // Start listening for incoming connections
     // register with level-triggered opt
-    poll.register(&server, SERVER_TOKEN, Ready::readable(),
+    poll.register(&server, SERVER_TOKEN, Ready::readable() | Ready::hup(),
               PollOpt::level()).unwrap();
 
     // Create storage for events
@@ -103,7 +104,7 @@ fn main() {
 
                             // register the new socket
                             match connections.get(&new_token) {
-                                Some(connection) => poll.register(&connection.stream, new_token, Ready::readable(), PollOpt::level()).unwrap(),
+                                Some(connection) => poll.register(&connection.stream, new_token, Ready::readable() | Ready::hup(), PollOpt::level()).unwrap(),
                                 _ => panic!("Could not register the new connection"),
                             }
 
@@ -124,7 +125,7 @@ fn main() {
                                         // we got some bytes in the buffer, register to wait for
                                         // writable events in the poll
                                         if bytes_read > 0 {
-                                            poll.reregister(&connection.stream, token, Ready::writable(), PollOpt::level()).unwrap();
+                                            poll.reregister(&connection.stream, token, Ready::writable() | Ready::hup(), PollOpt::level()).unwrap();
                                         }
                                     }
                                     Err(e) => {
@@ -139,12 +140,18 @@ fn main() {
                                     Ok(_) => {
                                         // we sucessfully wrote data back to the stream
                                         // reregister in the poll to read more data
-                                        poll.reregister(&connection.stream, token, Ready::readable(), PollOpt::level()).unwrap();
+                                        poll.reregister(&connection.stream, token, Ready::readable() | Ready::hup(), PollOpt::level()).unwrap();
                                     }
                                     Err(e) => {
                                         panic!("Error {}", e);
                                     }
                                 }
+                            }
+
+                            // we got a hup
+                            if event.kind().is_hup() {
+                                poll.deregister(&connection.stream).unwrap();
+
                             }
 
                         },
