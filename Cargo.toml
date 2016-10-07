@@ -1,0 +1,7 @@
+[package]
+name = "rust-echo-server"
+version = "0.1.0"
+authors = ["Gustavo Sampaio <gbritosampaio@gmail.com>"]
+
+[dependencies]
+mio = "0.6"
