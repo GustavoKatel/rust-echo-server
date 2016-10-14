@@ -1,7 +1,6 @@
 extern crate mio;
 
 use std::str;
-use std::vec;
 use std::time::Duration;
 use std::collections::HashMap;
 use std::io::{Write, Read};
@@ -11,18 +10,17 @@ use mio::tcp::{TcpListener, TcpStream};
 
 const MAX_CONN : usize = 1024;
 
-const MAX_BUFFER : usize = 1024 * 5;
+// const MAX_BUFFER : usize = 1024 * 5;
 const MAX_READ : usize = 1024;
 
 struct Connection {
     stream : TcpStream,
     buffer : Vec<u8>,
-    offset : usize,
 }
 
 impl Connection {
     fn new(stream : TcpStream) -> Connection {
-        Connection{stream: stream, buffer: Vec::new(), offset: 0}
+        Connection{stream: stream, buffer: Vec::new()}
     }
 
     fn read(&mut self) -> Result<usize, std::io::Error> {
@@ -32,7 +30,7 @@ impl Connection {
         match self.stream.read(&mut buff) {
             Ok(bytes_read) => {
 
-                let s = match str::from_utf8(&buff) {
+                match str::from_utf8(&buff) {
                     Ok(v) => v,
                     Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
                 };
@@ -91,7 +89,7 @@ fn main() {
                     // Accept and drop the socket immediately, this will close
                     // the socket and notify the client of the EOF.
                     match server.accept() {
-                        Ok((stream, addr)) => {
+                        Ok((stream, _/*addr*/)) => {
 
                             next_token = (next_token + 1) % MAX_CONN;
                             if next_token == 0 {
